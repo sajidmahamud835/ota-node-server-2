@@ -86,6 +86,7 @@ async function fetchWithSession(payload, allowRetry = true) {
             return fetchWithSession(payload, false);
         }
 
+
         return response.data;
     } catch (error) {
         const errMsg = error.response?.data?.message || error.message || "Unknown error";
@@ -207,9 +208,39 @@ app.get("/pricecombo", async (req, res) => {
     }
 });
 
+const API_FORWARD_BASE = process.env.API_FORWARD_BASE || "https://api.phptravels.com";
+app.all("/ah/*", async (req, res) => {
+    try {
+        const path = req.originalUrl.replace("/ah", ""); // strip /v1 prefix
+        const url = API_FORWARD_BASE + path;
+
+        console.log("➡️ Forwarding request to:", url);
+        console.log("Method:", req.method);
+        console.log("Headers:", req.headers);
+        console.log("Body:", req.body);
+
+        const response = await axios({
+            method: req.method,
+            url,
+            headers: { ...req.headers, host: new URL(API_FORWARD_BASE).host },
+            data: req.body,
+            params: req.query,
+            validateStatus: () => true, // allow all status codes
+        });
+
+        console.log("⬅️ Response status:", response.status);
+        res.status(response.status).send(response.data);
+
+    } catch (err) {
+        console.error("❌ Proxy error:", err.message);
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+
 
 app.get("/", (req, res) => {
-    res.send("AmyBD Express Proxy is running ✅");
+    res.send("Express Proxy is running ✅");
 });
 
 // --- Start Server ---
