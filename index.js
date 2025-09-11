@@ -160,7 +160,7 @@ app.post("/flight/combo", async (req, res) => {
 app.get("/checksession", async (req, res) => {
     try {
         const data = await fetchWithSession({ CMND: "_CHKSESSION_" });
-        res.json({ success: true, data });
+        res.json({ success: true });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
