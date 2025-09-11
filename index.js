@@ -156,6 +156,58 @@ app.post("/flight/combo", async (req, res) => {
     }
 });
 
+// --- Check Session ---
+app.get("/checksession", async (req, res) => {
+    try {
+        const data = await fetchWithSession({ CMND: "_CHKSESSION_" });
+        res.json({ success: true, data });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// --- SignalR Ping (direct, not using session) ---
+app.get("/ping", async (req, res) => {
+    try {
+        const response = await axios.get("https://www.amybd.com/laser/signalr/ping", {
+            params: { _: Date.now() },
+            headers: { "Content-Type": "application/json" }
+        });
+        res.json({ success: true, data: response.data });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+// --- Price Combo ---
+app.get("/pricecombo", async (req, res) => {
+    try {
+        const { sid1, sid2 = 0, aid1, aid2 = "", disp = 1 } = req.query;
+
+        if (!sid1 || !aid1) {
+            return res.status(400).json({
+                success: false,
+                error: "Missing required query params: sid1 and aid1"
+            });
+        }
+
+        const payload = {
+            CMND: "_PRICECOMBO_",
+            sid1,
+            sid2,
+            aid1,
+            aid2,
+            disp
+        };
+
+        const data = await fetchWithSession(payload);
+        res.json({ success: true, data });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
+
 app.get("/", (req, res) => {
     res.send("AmyBD Express Proxy is running ✅");
 });
