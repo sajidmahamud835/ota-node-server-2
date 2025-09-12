@@ -208,9 +208,10 @@ app.get("/pricecombo", async (req, res) => {
     }
 });
 
-app.all("/proxy/*", async (req, res) => {
+const API_FORWARD_BASE = process.env.API_FORWARD_BASE || "https://api.phptravels.com";
+app.all("/ah/*", async (req, res) => {
     try {
-        const path = req.originalUrl.replace("/proxy", ""); // strip /proxy prefix
+        const path = req.originalUrl.replace("/ah", ""); // strip /v1 prefix
         const url = API_FORWARD_BASE + path;
 
         console.log("➡️ Forwarding request to:", url);
