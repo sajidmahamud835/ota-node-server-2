@@ -46,8 +46,15 @@ async function login() {
         CMND: "_LOGINONLY_",
     };
 
-    const response = await axios.post(API_URL, payload, {
-        headers: { "Content-Type": "application/json" },
+    const response = await axios.post(API_URL, JSON.stringify(payload), {
+        headers: {
+            "Content-Type": "text/plain, application/x-www-form-urlencoded; charset=UTF-8",
+            "X-Requested-With": "XMLHttpRequest",
+            "sec-ch-ua": '"Not;A=Brand";v="99", "Google Chrome";v="139", "Chromium";v="139"',
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": '"Windows"',
+        },
+        maxBodyLength: Infinity,
     });
 
     if (response.data.success) {
@@ -69,11 +76,16 @@ async function fetchWithSession(payload, allowRetry = true) {
     }
 
     try {
-        const response = await axios.post(API_URL, payload, {
+        const response = await axios.post(API_URL, JSON.stringify(payload), {
             headers: {
-                "Content-Type": "application/json",
-                "authid": session.authid, // ✅ authid as header
+                "Content-Type": "text/plain, application/x-www-form-urlencoded; charset=UTF-8",
+                "authid": session.authid,
+                "X-Requested-With": "XMLHttpRequest",
+                "sec-ch-ua": '"Not;A=Brand";v="99", "Google Chrome";v="139", "Chromium";v="139"',
+                "sec-ch-ua-mobile": "?0",
+                "sec-ch-ua-platform": '"Windows"',
             },
+            maxBodyLength: Infinity,
         });
 
         const sessionExpired =
@@ -85,7 +97,6 @@ async function fetchWithSession(payload, allowRetry = true) {
             session = await login();
             return fetchWithSession(payload, false);
         }
-
 
         return response.data;
     } catch (error) {
@@ -129,7 +140,7 @@ app.get("/airport", async (req, res) => {
 
 app.post("/flight/oneway", async (req, res) => {
     try {
-        const payload = { CMND: "_FLIGHTSEARCHOPEN_", ...req.body, is_combo: 0 };
+        const payload = { CMND: "_FLIGHTSEARCH_", ...req.body, is_combo: 0 };
         const data = await fetchWithSession(payload);
         res.json({ success: true, data });
     } catch (err) {
@@ -170,7 +181,7 @@ app.post("/api", async (req, res) => {
 // --- Check Session ---
 app.get("/checksession", async (req, res) => {
     try {
-        const data = await fetchWithSession({ CMND: "_CHKSESSION_" });
+        await fetchWithSession({ CMND: "_CHKSESSION_" });
         res.json({ success: true });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
@@ -182,7 +193,7 @@ app.get("/ping", async (req, res) => {
     try {
         const response = await axios.get("https://www.amybd.com/laser/signalr/ping", {
             params: { _: Date.now() },
-            headers: { "Content-Type": "application/json" }
+            headers: { "Content-Type": "application/json" },
         });
         res.json({ success: true, data: response.data });
     } catch (err) {
@@ -198,7 +209,7 @@ app.get("/pricecombo", async (req, res) => {
         if (!sid1 || !aid1) {
             return res.status(400).json({
                 success: false,
-                error: "Missing required query params: sid1 and aid1"
+                error: "Missing required query params: sid1 and aid1",
             });
         }
 
@@ -208,7 +219,7 @@ app.get("/pricecombo", async (req, res) => {
             sid2,
             aid1,
             aid2,
-            disp
+            disp,
         };
 
         const data = await fetchWithSession(payload);
