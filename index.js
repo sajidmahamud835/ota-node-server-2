@@ -157,6 +157,16 @@ app.post("/flight/combo", async (req, res) => {
     }
 });
 
+app.post("/api", async (req, res) => {
+    try {
+        const payload = { ...req.body };
+        const data = await fetchWithSession(payload);
+        res.json({ success: true, data });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
+    }
+});
+
 // --- Check Session ---
 app.get("/checksession", async (req, res) => {
     try {
@@ -207,7 +217,6 @@ app.get("/pricecombo", async (req, res) => {
         res.status(500).json({ success: false, error: err.message });
     }
 });
-
 
 app.get("/", (req, res) => {
     res.send("Express Proxy is running ✅");
