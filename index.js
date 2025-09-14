@@ -75,19 +75,40 @@ async function fetchWithSession(payload, allowRetry = true) {
         session = await login();
     }
 
-    try {
-        const response = await axios.post(API_URL, JSON.stringify(payload), {
-            headers: {
-                "Content-Type": "text/plain, application/x-www-form-urlencoded; charset=UTF-8",
-                "authid": session.authid,
-                "X-Requested-With": "XMLHttpRequest",
-                "sec-ch-ua": '"Not;A=Brand";v="99", "Google Chrome";v="139", "Chromium";v="139"',
-                "sec-ch-ua-mobile": "?0",
-                "sec-ch-ua-platform": '"Windows"',
-            },
-            maxBodyLength: Infinity,
-        });
+    // try {
+    //     const response = await axios.post(API_URL, JSON.stringify(payload), {
+    //         headers: {
+    //             "Content-Type": "text/plain, application/x-www-form-urlencoded; charset=UTF-8",
+    //             "authid": session.authid,
+    //             "X-Requested-With": "XMLHttpRequest",
+    //             "sec-ch-ua": '"Not;A=Brand";v="99", "Google Chrome";v="139", "Chromium";v="139"',
+    //             "sec-ch-ua-mobile": "?0",
+    //             "sec-ch-ua-platform": '"Windows"',
+    //         },
+    //         maxBodyLength: Infinity,
+    //     });
 
+    // New version has both post and get support
+    const method = payload.CMND === "_CHKSESSION_" || payload.CMND === "_GETBALANCE_" || payload.CMND === "_PRICECOMBO_" ? "get" : "post";
+    const axiosConfig = {
+        headers: {
+            "Content-Type": "text/plain, application/x-www-form-urlencoded; charset=UTF-8",
+            "authid": session.authid,
+            "X-Requested-With": "XMLHttpRequest",
+            "sec-ch-ua": '"Not;A=Brand";v="99", "Google Chrome";v="139", "Chromium";v="139"',
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": '"Windows"',
+        },
+        maxBodyLength: Infinity,
+        params: method === "get" ? payload : undefined,
+        data: method === "post" ? JSON.stringify(payload) : undefined,
+        method,
+        url: API_URL,
+    };
+    try {
+        const response = await axios(axiosConfig);
+
+        // Check for session expiration in response
         const sessionExpired =
             response.data.success === false &&
             /login|expired|unauthorized|invalid/i.test(response.data.message || "");
@@ -176,6 +197,21 @@ app.post("/api", async (req, res) => {
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
+});
+
+// create get request https://www.amybd.com/atapi.aspx?CMND=_PRICECOMBO_&sid1={searchid}&sid2=0&aid1={amyid}&aid2=&disp=1
+
+app.get("/api", (req, res) => {
+    // https://www.amybd.com/atapi.aspx?CMND=_PRICECOMBO_&sid1={searchid}&sid2=0&aid1={amyid}&aid2=&disp=1
+    const query = req.query;
+
+    if (!query.CMND) {
+        return res.status(400).json({ success: false, error: "Missing 'CMND' query param" });
+    }
+
+    fetchWithSession(query)
+        .then((data) => res.json({ success: true, data }))
+        .catch((err) => res.status(500).json({ success: false, error: err.message }));
 });
 
 // --- Check Session ---
