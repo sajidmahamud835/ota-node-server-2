@@ -217,8 +217,8 @@ app.get("/api", (req, res) => {
 // --- Check Session ---
 app.get("/checksession", async (req, res) => {
     try {
-        await fetchWithSession({ CMND: "_CHKSESSION_" });
-        res.json({ success: true });
+        const result = await fetchWithSession({ CMND: "_CHKSESSION_" });
+        res.json({ success: true, data: result });
     } catch (err) {
         res.status(500).json({ success: false, error: err.message });
     }
